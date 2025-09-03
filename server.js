@@ -7,6 +7,8 @@ const mongoose = require("mongoose");
 const methodOverride = require("method-override");
 const morgan = require("morgan");
 const authController = require("./controllers/auth.js");
+const session = require('express-session');
+
 
 
 // Set the port from environment variable or default to 3000
@@ -24,12 +26,31 @@ app.use(express.urlencoded({ extended: false }));
 app.use(methodOverride("_method"));
 // Morgan for logging HTTP requests
 app.use(morgan('dev'));
-app.use("/auth", authController);
 
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: true,
+  })
+);
 
-app.get("/", async (req, res) => {
-  res.render('index.ejs')
+app.get("/", (req, res) => {
+  res.render('index.ejs', {
+    user: req.session.user,
+  })
 });
+
+app.get("/vip-lounge", (req, res) => {
+  if (req.session.user) {
+    res.send(`Welcome to the party ${req.session.user.username}.`);
+  } else {
+    res.send("Sorry, no guests allowed.");
+  }
+});
+
+
+app.use("/auth", authController);
 
 app.listen(port, () => {
   console.log(`The express app is ready on port ${port}!`);
